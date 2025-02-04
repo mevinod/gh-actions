@@ -22,22 +22,27 @@ jobs:
           ISSUE_NUMBER=${{ github.event.issue.number }}
           REPO=${{ github.repository }}
 
-          # Fetch the issue details from GitHub API
+          # Fetch issue details using GitHub API
           ISSUE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/$REPO/issues/$ISSUE_NUMBER")
 
-          # Extract environment and region values
-          ENVIRONMENT=$(echo "$ISSUE_DATA" | jq -r '.body' | grep -A 1 'Environment' | tail -n 1 | xargs)
-          REGION=$(echo "$ISSUE_DATA" | jq -r '.body' | grep -A 1 'Region' | tail -n 1 | xargs)
+          # Extract environment and region using jq
+          ENVIRONMENT=$(echo "$ISSUE_DATA" | jq -r '.body' | awk -F "Environment" '{print $2}' | awk -F "Region" '{print $1}' | tr -d '\n' | xargs)
+          REGION=$(echo "$ISSUE_DATA" | jq -r '.body' | awk -F "Region" '{print $2}' | tr -d '\n' | xargs)
 
-          # Ensure variables are not empty
+          # Validate extracted values
           if [[ -z "$ENVIRONMENT" || -z "$REGION" ]]; then
             echo "❌ Error: Environment or Region is empty!"
             exit 1
           fi
 
+          echo "Extracted Environment: $ENVIRONMENT"
+          echo "Extracted Region: $REGION"
+
+          # Save to GitHub environment variables
           echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
           echo "REGION=$REGION" >> $GITHUB_ENV
+
 
       - name: Verify Deployment Path
         run: |
