@@ -1,5 +1,5 @@
-name: Deployment Request
-description: Request a deployment for a specific environment and region.
+name: "Deployment Request"
+description: "Request a deployment for a specific environment and region."
 title: "[Deployment] <environment> - <region>"
 labels: ["deployment"]
 body:
