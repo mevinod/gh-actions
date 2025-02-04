@@ -75,6 +75,7 @@ jobs:
 
       - name: Initialize Terraform
         run: |
+          echo $DEPLOYMENT_PATH
           cd $DEPLOYMENT_PATH
           ls -la
 
