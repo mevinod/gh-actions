@@ -76,7 +76,7 @@ jobs:
       - name: Initialize Terraform
         run: |
           cd $DEPLOYMENT_PATH
-          bash test.sh
+          ls -la
 
 #      - name: Apply Terraform
 #        run: |
