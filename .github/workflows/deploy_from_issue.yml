@@ -92,3 +92,12 @@ jobs:
           curl -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
           -d "{\"body\": \"$COMMENT_BODY\"}" \
           "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments"
+
+      - name: Close the issue
+        run: |
+          echo "✅ Closing issue after deployment approval."
+          curl -X PATCH -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -d '{"state": "closed"}' \
+          "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE_NUMBER"
+      
+      
