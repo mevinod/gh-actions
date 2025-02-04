@@ -79,7 +79,7 @@ jobs:
           echo $DEPLOYMENT_PATH
           cd $DEPLOYMENT_PATH
           ls -la
-          bash test/sh
+          bash test.sh
 
 #      - name: Apply Terraform
 #        run: |
