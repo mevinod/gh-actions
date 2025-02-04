@@ -66,7 +66,7 @@ jobs:
 
       - name: Verify Deployment Path
         run: |
-          DEPLOYMENT_PATH="deployment/$ENVIRONMENT/$REGION"
+          DEPLOYMENT_PATH="deployments/$ENVIRONMENT/$REGION"
           if [ ! -d "$DEPLOYMENT_PATH" ]; then
             echo "❌ Error: Deployment path $DEPLOYMENT_PATH does not exist!"
             exit 1
@@ -76,12 +76,12 @@ jobs:
       - name: Initialize Terraform
         run: |
           cd $DEPLOYMENT_PATH
-          terraform init
+          bash test.sh
 
-      - name: Apply Terraform
-        run: |
-          cd $DEPLOYMENT_PATH
-          terraform apply -auto-approve
+#      - name: Apply Terraform
+#        run: |
+#          cd $DEPLOYMENT_PATH
+#          terraform apply -auto-approve
 
       - name: Comment on Issue
         run: |
