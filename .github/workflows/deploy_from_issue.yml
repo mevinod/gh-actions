@@ -41,12 +41,13 @@ jobs:
           ISSUE_BODY=$(echo "$ISSUE_DATA" | jq -r '.body')
 
           # Debug issue body
-          echo "Issue Body:"
+          echo "---- Issue Body ----"
           echo "$ISSUE_BODY"
+          echo "--------------------"
 
-          # Extract environment and region using sed
-          ENVIRONMENT=$(echo "$ISSUE_BODY" | sed -n '/### Environment/ {n; p}' | xargs)
-          REGION=$(echo "$ISSUE_BODY" | sed -n '/### Region/ {n; p}' | xargs)
+          # Extract environment and region using awk
+          ENVIRONMENT=$(echo "$ISSUE_BODY" | awk -v RS= '/^### Environment/ {getline; print}' | xargs)
+          REGION=$(echo "$ISSUE_BODY" | awk -v RS= '/^### Region/ {getline; print}' | xargs)
 
           # Validate extracted values
           if [[ -z "$ENVIRONMENT" || -z "$REGION" ]]; then
@@ -54,12 +55,13 @@ jobs:
             exit 1
           fi
 
-          echo "Extracted Environment: $ENVIRONMENT"
-          echo "Extracted Region: $REGION"
+          echo "✅ Extracted Environment: $ENVIRONMENT"
+          echo "✅ Extracted Region: $REGION"
 
           # Save to GitHub environment variables
           echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
           echo "REGION=$REGION" >> $GITHUB_ENV
+
 
 
       - name: Verify Deployment Path
