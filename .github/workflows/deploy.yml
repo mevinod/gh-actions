@@ -19,7 +19,7 @@ jobs:
 
       - name: Set Deployment Path
         run: |
-          DEPLOYMENT_PATH="deployment/${{ inputs.environment }}/${{ inputs.region }}"
+          DEPLOYMENT_PATH="deployments/${{ inputs.environment }}/${{ inputs.region }}"
           echo "DEPLOYMENT_PATH=$DEPLOYMENT_PATH" >> $GITHUB_ENV
 
       - name: Verify Deployment Path
