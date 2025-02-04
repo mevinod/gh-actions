@@ -1,0 +1,43 @@
+name: Deploy from Issue
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  deploy:
+    if: contains(github.event.issue.labels.*.name, 'deployment')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Extract Issue Inputs
+        id: extract
+        run: |
+          ISSUE_BODY="${{ github.event.issue.body }}"
+          ENVIRONMENT=$(echo "$ISSUE_BODY" | grep -A 1 '### Environment' | tail -n 1 | xargs)
+          REGION=$(echo "$ISSUE_BODY" | grep -A 1 '### Region' | tail -n 1 | xargs)
+          echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
+          echo "REGION=$REGION" >> $GITHUB_ENV
+
+      - name: Verify Deployment Path
+        run: |
+          DEPLOYMENT_PATH="deployments/$ENVIRONMENT/$REGION"
+          if [ ! -d "$DEPLOYMENT_PATH" ]; then
+            echo "Error: Deployment path $DEPLOYMENT_PATH does not exist!"
+            exit 1
+          fi
+          echo "Deploying from $DEPLOYMENT_PATH"
+
+      - name: Initialize Terraform
+        run: |
+          cd $DEPLOYMENT_PATH
+          bash test.sh
+
+
+      - name: Comment on Issue
+        run: |
+          curl -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -d '{"body": "✅ Deployment started for `'"$ENVIRONMENT/$REGION"'`"}' \
+          "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments"
