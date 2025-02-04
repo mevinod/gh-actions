@@ -1,0 +1,22 @@
+name: Deployment Request
+description: Request a deployment for a specific environment and region.
+title: "[Deployment] <environment> - <region>"
+labels: ["deployment"]
+body:
+  - type: input
+    id: environment
+    attributes:
+      label: "Environment"
+      description: "Enter the environment name (e.g., automation, sanity)."
+      placeholder: "e.g., automation"
+    validations:
+      required: true
+
+  - type: input
+    id: region
+    attributes:
+      label: "Region"
+      description: "Enter the AWS region (e.g., us-east-1, eu-west-1)."
+      placeholder: "e.g., us-east-1"
+    validations:
+      required: true
