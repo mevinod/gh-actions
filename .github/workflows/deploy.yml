@@ -1,0 +1,41 @@
+name: Infrastructure Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment (e.g., automation, sanity)'
+        required: true
+      region:
+        description: 'Region (e.g., us-east-1, eu-west-1)'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set Deployment Path
+        run: |
+          DEPLOYMENT_PATH="deployment/${{ inputs.environment }}/${{ inputs.region }}"
+          echo "DEPLOYMENT_PATH=$DEPLOYMENT_PATH" >> $GITHUB_ENV
+
+      - name: Verify Deployment Path
+        run: |
+          if [ ! -d "$DEPLOYMENT_PATH" ]; then
+            echo "Error: Deployment path $DEPLOYMENT_PATH does not exist!"
+            exit 1
+          fi
+          echo "Deploying from $DEPLOYMENT_PATH"
+
+      - name: Initialize Terraform
+        run: |
+          cd $DEPLOYMENT_PATH
+          bash test.sh
+
+#      - name: Apply Terraform
+#        run: |
+#          cd $DEPLOYMENT_PATH
+#          terraform apply -auto-approve
