@@ -15,17 +15,17 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-      - name: Debug Issue Body
-        run: |
-          ISSUE_NUMBER=${{ github.event.issue.number }}
-          REPO=${{ github.repository }}
+#      - name: Debug Issue Body
+#        run: |
+#          ISSUE_NUMBER=${{ github.event.issue.number }}
+#          REPO=${{ github.repository }}
 
-          # Fetch issue details
-          ISSUE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/$REPO/issues/$ISSUE_NUMBER")
+#          # Fetch issue details
+#          ISSUE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+#            "https://api.github.com/repos/$REPO/issues/$ISSUE_NUMBER")
 
-          echo "Raw Issue Data:"
-          echo "$ISSUE_DATA"
+#          echo "Raw Issue Data:"
+#          echo "$ISSUE_DATA"
 
       - name: Extract Issue Inputs
         id: extract
@@ -44,9 +44,9 @@ jobs:
           echo "Issue Body:"
           echo "$ISSUE_BODY"
 
-          # Extract environment and region
-          ENVIRONMENT=$(echo "$ISSUE_BODY" | grep -i "Environment:" | cut -d':' -f2 | xargs)
-          REGION=$(echo "$ISSUE_BODY" | grep -i "Region:" | cut -d':' -f2 | xargs)
+          # Extract environment and region using sed
+          ENVIRONMENT=$(echo "$ISSUE_BODY" | sed -n '/### Environment/ {n; p}' | xargs)
+          REGION=$(echo "$ISSUE_BODY" | sed -n '/### Region/ {n; p}' | xargs)
 
           # Validate extracted values
           if [[ -z "$ENVIRONMENT" || -z "$REGION" ]]; then
