@@ -4,6 +4,10 @@ on:
   issues:
     types: [labeled]
 
+permissions:
+  issues: read
+  contents: read
+
 jobs:
   deploy:
     if: contains(github.event.issue.labels.*.name, 'deployment')
@@ -15,29 +19,48 @@ jobs:
       - name: Extract Issue Inputs
         id: extract
         run: |
-          ISSUE_BODY="${{ github.event.issue.body }}"
-          ENVIRONMENT=$(echo "$ISSUE_BODY" | grep -A 1 '### Environment' | tail -n 1 | xargs)
-          REGION=$(echo "$ISSUE_BODY" | grep -A 1 '### Region' | tail -n 1 | xargs)
+          ISSUE_NUMBER=${{ github.event.issue.number }}
+          REPO=${{ github.repository }}
+
+          # Fetch the issue details from GitHub API
+          ISSUE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/$REPO/issues/$ISSUE_NUMBER")
+
+          # Extract environment and region values
+          ENVIRONMENT=$(echo "$ISSUE_DATA" | jq -r '.body' | grep -A 1 'Environment' | tail -n 1 | xargs)
+          REGION=$(echo "$ISSUE_DATA" | jq -r '.body' | grep -A 1 'Region' | tail -n 1 | xargs)
+
+          # Ensure variables are not empty
+          if [[ -z "$ENVIRONMENT" || -z "$REGION" ]]; then
+            echo "❌ Error: Environment or Region is empty!"
+            exit 1
+          fi
+
           echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
           echo "REGION=$REGION" >> $GITHUB_ENV
 
       - name: Verify Deployment Path
         run: |
-          DEPLOYMENT_PATH="deployments/$ENVIRONMENT/$REGION"
+          DEPLOYMENT_PATH="deployment/$ENVIRONMENT/$REGION"
           if [ ! -d "$DEPLOYMENT_PATH" ]; then
-            echo "Error: Deployment path $DEPLOYMENT_PATH does not exist!"
+            echo "❌ Error: Deployment path $DEPLOYMENT_PATH does not exist!"
             exit 1
           fi
-          echo "Deploying from $DEPLOYMENT_PATH"
+          echo "✅ Deploying from $DEPLOYMENT_PATH"
 
       - name: Initialize Terraform
         run: |
           cd $DEPLOYMENT_PATH
-          bash test.sh
+          terraform init
 
+      - name: Apply Terraform
+        run: |
+          cd $DEPLOYMENT_PATH
+          terraform apply -auto-approve
 
       - name: Comment on Issue
         run: |
+          COMMENT_BODY="✅ Deployment started for **$ENVIRONMENT/$REGION**"
           curl -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          -d '{"body": "✅ Deployment started for `'"$ENVIRONMENT/$REGION"'`"}' \
+          -d "{\"body\": \"$COMMENT_BODY\"}" \
           "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments"
