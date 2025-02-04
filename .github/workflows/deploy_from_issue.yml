@@ -5,8 +5,8 @@ on:
     types: [labeled]
 
 permissions:
-  issues: read
-  contents: read
+  issues: write
+  contents: write
 
 jobs:
   deploy:
