@@ -23,6 +23,13 @@ jobs:
         run: |
           git config --global user.name "mevinod"
           git config --global user.email "connect@mevinod.com"
+      - name: Get branch name
+        id: get_branch
+        run: |
+          BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}" | tr '/' '-')
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          echo "Branch Name: $BRANCH_NAME"
+
       - name: Read base version
         id: base_version
         run: echo "BASE_VERSION=$(cat .version)" >> $GITHUB_ENV
@@ -30,8 +37,11 @@ jobs:
       - name: Get latest build number
         id: get_latest_build
         run: |
+          BRANCH_PREFIX=${{ env.BRANCH_NAME }}
           BASE_VERSION=${{ env.BASE_VERSION }}
-          LATEST_TAG=$(git tag -l "${BASE_VERSION}.*" --sort=-v:refname | head -n 1)
+          PREFIXED_VERSION="${BRANCH_PREFIX}-${BASE_VERSION}"
+
+          LATEST_TAG=$(git tag -l "${PREFIXED_VERSION}.*" --sort=-v:refname | head -n 1)
 
           if [[ -z "$LATEST_TAG" ]]; then
             NEW_BUILD=1
@@ -40,14 +50,12 @@ jobs:
             NEW_BUILD=$((CURRENT_BUILD + 1))
           fi
 
-          NEW_TAG="${BASE_VERSION}.${NEW_BUILD}"
+          NEW_TAG="${PREFIXED_VERSION}.${NEW_BUILD}"
           echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
           echo "New tag: $NEW_TAG"
 
       - name: Create and push tag
         run: |
-          git config --global user.email "github-actions@github.com"
-          git config --global user.name "GitHub Actions"
           git tag ${{ env.NEW_TAG }}
           git push origin ${{ env.NEW_TAG }}
 
