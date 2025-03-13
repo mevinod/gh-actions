@@ -20,40 +20,36 @@ jobs:
         with:
           fetch-depth: 0
       - name: Set up Git user
-      
         run: |
           git config --global user.name "mevinod"
           git config --global user.email "connect@mevinod.com"
-      - name: Determine Branch and Versioning
-        id: versioning
+      - name: Read base version
+        id: base_version
+        run: echo "BASE_VERSION=$(cat .version)" >> $GITHUB_ENV
+
+      - name: Get latest build number
+        id: get_latest_build
         run: |
-          BRANCH_NAME=${GITHUB_REF#refs/heads/}  # Get current branch
-          
-          # Use only main branch's versioning when merged
-          if [[ "$BRANCH_NAME" == "main" ]]; then
-            TAG_PREFIX="V-main"
+          BASE_VERSION=${{ env.BASE_VERSION }}
+          LATEST_TAG=$(git tag -l "${BASE_VERSION}.*" --sort=-v:refname | head -n 1)
+
+          if [[ -z "$LATEST_TAG" ]]; then
+            NEW_BUILD=1
           else
-            TAG_PREFIX="V-$BRANCH_NAME"
+            CURRENT_BUILD=$(echo "$LATEST_TAG" | awk -F'.' '{print $4}')
+            NEW_BUILD=$((CURRENT_BUILD + 1))
           fi
 
-          # Get the last version for the respective branch
-          LAST_VERSION=$(git tag --list "$TAG_PREFIX-*" | sort -V | tail -n1 | sed "s/$TAG_PREFIX-//")
+          NEW_TAG="${BASE_VERSION}.${NEW_BUILD}"
+          echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
+          echo "New tag: $NEW_TAG"
 
-          if [ -z "$LAST_VERSION" ]; then
-            NEW_VERSION="1.0.0.0"
-          else
-            IFS='.' read -r -a parts <<< "$LAST_VERSION"
-            parts[3]=$((parts[3] + 1))  # Increment patch version
-            NEW_VERSION="${parts[0]}.${parts[1]}.${parts[2]}"
-          fi
-
-          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
-          echo "TAG_PREFIX=$TAG_PREFIX" >> $GITHUB_ENV
-
-      - name: Commit and push new version
+      - name: Create and push tag
         run: |
-          git tag -a "$TAG_PREFIX-$NEW_VERSION" -m "Release version $NEW_VERSION for $BRANCH_NAME"
-          git push origin "$TAG_PREFIX-$NEW_VERSION"
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git tag ${{ env.NEW_TAG }}
+          git push origin ${{ env.NEW_TAG }}
 
       - name: Set Deployment Path
         run: |
