@@ -17,7 +17,7 @@ jobs:
     environment: jobvinod
     steps:
       - name: Print Job Name
-        run: echo "This job is dynamically behaving as: jobvinod"
+        run: echo "This job is dynamically behaving as jobvinod"
         env:
           JOB_NAME: jobvinod
   deploy:
