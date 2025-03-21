@@ -12,6 +12,14 @@ on:
         required: true
 
 jobs:
+  dynamic_job:
+    runs-on: ubuntu-latest
+    environment: jobvinod
+    steps:
+      - name: Print Job Name
+        run: echo "This job is dynamically behaving as: ${{ env.JOB_NAME }}"
+        env:
+          JOB_NAME: jobvinod
   deploy:
     runs-on: ubuntu-latest
     steps:
