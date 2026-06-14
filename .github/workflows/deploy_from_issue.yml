@@ -1,8 +1,8 @@
 name: Deploy from Issue
 
 on:
-  issues:
-    types: [labeled]
+  issue_comment:
+    types: [created]
 
 permissions:
   issues: write
@@ -10,22 +10,20 @@ permissions:
 
 jobs:
   deploy:
-    if: contains(github.event.issue.labels.*.name, 'deployment')
+    # Only run when:
+    #   1. The comment is on an issue (not a PR)
+    #   2. The commenter is mevinod
+    #   3. The comment body is exactly /approved
+    #   4. The issue has the 'approval-required' label
+    if: |
+      github.event.issue.pull_request == null &&
+      github.event.comment.user.login == 'mevinod' &&
+      github.event.comment.body == '/approved' &&
+      contains(github.event.issue.labels.*.name, 'approval-required')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-#      - name: Debug Issue Body
-#        run: |
-#          ISSUE_NUMBER=${{ github.event.issue.number }}
-#          REPO=${{ github.repository }}
-
-#          # Fetch issue details
-#          ISSUE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-#            "https://api.github.com/repos/$REPO/issues/$ISSUE_NUMBER")
-
-#          echo "Raw Issue Data:"
-#          echo "$ISSUE_DATA"
 
       - name: Extract Issue Inputs
         id: extract
@@ -62,7 +60,19 @@ jobs:
           echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
           echo "REGION=$REGION" >> $GITHUB_ENV
 
+      - name: Swap label to 'deployment'
+        run: |
+          # Remove approval-required label
+          curl -X DELETE \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/labels/approval-required"
 
+          # Add deployment label
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"labels": ["deployment"]}' \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/labels"
 
       - name: Verify Deployment Path
         run: |
@@ -90,14 +100,14 @@ jobs:
         run: |
           COMMENT_BODY="✅ Deployment started for **$ENVIRONMENT/$REGION**"
           curl -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Content-Type: application/json" \
           -d "{\"body\": \"$COMMENT_BODY\"}" \
           "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments"
 
       - name: Close the issue
         run: |
-          echo "✅ Closing issue after deployment approval."
+          echo "✅ Closing issue after deployment."
           curl -X PATCH -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Content-Type: application/json" \
           -d '{"state": "closed"}' \
           "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}"
-      
-      
